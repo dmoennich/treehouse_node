@@ -7,22 +7,38 @@ var printMessage = function(userName, badgeCount, jsPoints){
 };
 
 
-var req = http.get("http://teamtreehouse.com/dmoennich.json", function(res){
-	var resBody = "";
+var printErrorMessage = function(error){
+	console.error("An error occured: " + error.message);
+};
 
-	res.on("data", function(dataChunk){
-		resBody += dataChunk;
-	});
 
-	res.on("end", function(){
-		var resJson = JSON.parse(resBody);
-		printMessage(userName, resJson.badges.length, resJson.points.JavaScript);
-	});
+var req = http.get("http://teamtreehouse.com/" + userName + ".json", function(res){
+	var resBody = "",
+	statusCodeError;
+
+	if(res.statusCode === 200){
+		res.on("data", function(dataChunk){
+			resBody += dataChunk;
+		});
+
+		res.on("end", function(){
+			try{
+				var resJson = JSON.parse(resBody);
+				printMessage(userName, resJson.badges.length, resJson.points.JavaScript);
+			}catch(jsonError){
+				printErrorMessage(jsonError);
+			}
+		});
+	}else {
+		statusCodeError = {
+			message: "Status code " + res.statusCode +
+				" (" + http.STATUS_CODES[res.statusCode] + ") returned for user " + userName + "."
+		};
+		printErrorMessage(statusCodeError);
+	}
 });
 
 
-req.on("error", function(error){
-	console.error("An error occured retrieving the user data: " + error.message);
-});
+req.on("error", printErrorMessage);
 
 
